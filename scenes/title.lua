@@ -20,7 +20,7 @@ function Scene.new(game)
 end
 
 function Scene:load()
-    self.flickStrength = 2500 * (love.graphics.getWidth() / 1117)
+    self.flickStrength = 2500 * (love.graphics.getWidth() / 1728)
 
     self.countdown.active = false
     self.countdown.timeLeft = 5
