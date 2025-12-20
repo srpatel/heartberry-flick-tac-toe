@@ -8,7 +8,7 @@ function Scene.new(game)
     
     -- Track charging state for each player
     self.playerCharge = {}
-    
+
     -- Countdown state
     self.countdown = {
         active = false,
@@ -20,6 +20,12 @@ function Scene.new(game)
 end
 
 function Scene:load()
+    self.flickStrength = 2500 * (love.graphics.getWidth() / 1117)
+
+    self.countdown.active = false
+    self.countdown.timeLeft = 5
+    self.countdown.timer = 0
+
     -- Reset joysticks!
     for i, player in ipairs(self.game.players) do
         local joystick = self.game:getJoystickByID(player.joystickID)
@@ -47,6 +53,9 @@ function Scene:update(dt)
             
             if self.countdown.timeLeft <= 0 then
                 -- Start the game
+                self.countdown.active = false
+                self.countdown.timeLeft = 5
+                self.countdown.timer = 0
                 self.game:setScene(self.game.scenes.game)
                 return
             end
@@ -93,37 +102,25 @@ function Scene:update(dt)
             local flickThreshold = 0.3 -- How much the magnitude must drop to trigger a flick
             local flick = false
 
-            if magnitude > self.game.constants.JOYSTICK_DEADZONE then
-                -- Check if magnitude dropped drastically (flick detected)
-                if charge.isCharging and charge.previousMagnitude > 0.4 and 
-                   (charge.previousMagnitude - magnitude) > flickThreshold then
-                    flick = true
-                else
-                    -- Start/update charging
-                    charge.isCharging = true
-                    charge.direction = {x = leftX, y = leftY}
-                    charge.magnitude = magnitude
-                end
+            -- Check if magnitude dropped drastically (flick detected)
+            if charge.isCharging and charge.previousMagnitude > 0.4 and 
+                (charge.previousMagnitude - magnitude) > flickThreshold then
+                flick = true
             else
-                -- Check if we were charging and now released to deadzone
-                if charge.isCharging then
-                    -- Apply velocity in opposite direction (flick effect)
-                    flick = true
-                end
-                
-                -- Clear charging state
-                charge.isCharging = false
+                -- Start/update charging
+                charge.isCharging = true
+                charge.direction = {x = leftX, y = leftY}
+                charge.magnitude = magnitude
             end
 
             if flick then
                 if flickCooldown <= 0 then
-                    local flickStrength = 2500 -- Adjust this value to change flick power
-                    player.velocity.x = -charge.direction.x * flickStrength * charge.previousMagnitude
-                    player.velocity.y = -charge.direction.y * flickStrength * charge.previousMagnitude
+                    player.velocity.x = -charge.direction.x * self.flickStrength * charge.previousMagnitude
+                    player.velocity.y = -charge.direction.y * self.flickStrength * charge.previousMagnitude
                     
                     -- Clear charging state after flick
                     charge.isCharging = false
-                    flickCooldown = 0.5 -- Half a second cooldown between flicks
+                    flickCooldown = 1 -- Half a second cooldown between flicks
                 end
             end
             
@@ -356,7 +353,7 @@ function Scene:draw()
                 local charge = self.playerCharge[player.joystickID]
                 
                 -- Calculate arrow length based on magnitude (max length of 100 pixels)
-                local maxLength = -100
+                local maxLength = -150
                 local arrowLength = charge.magnitude * maxLength
                 
                 -- Calculate end position of arrow (in direction of charge)

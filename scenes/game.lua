@@ -64,32 +64,20 @@ function Scene:update(dt)
             local flickThreshold = 0.3 -- How much the magnitude must drop to trigger a flick
             local flick = false
 
-            if magnitude > self.game.constants.JOYSTICK_DEADZONE then
-                -- Check if magnitude dropped drastically (flick detected)
-                if charge.isCharging and charge.previousMagnitude > 0.4 and 
-                   (charge.previousMagnitude - magnitude) > flickThreshold then
-                    flick = true
-                else
-                    -- Start/update charging
-                    charge.isCharging = true
-                    charge.direction = {x = leftX, y = leftY}
-                    charge.magnitude = magnitude
-                end
+            -- Check if magnitude dropped drastically (flick detected)
+            if charge.isCharging and charge.previousMagnitude > 0.4 and 
+                (charge.previousMagnitude - magnitude) > flickThreshold then
+                flick = true
             else
-                -- Check if we were charging and now released to deadzone
-                if charge.isCharging then
-                    -- Apply velocity in opposite direction (flick effect)
-                    flick = true
-                end
-                
-                -- Clear charging state
-                charge.isCharging = false
+                -- Start/update charging
+                charge.isCharging = true
+                charge.direction = {x = leftX, y = leftY}
+                charge.magnitude = magnitude
             end
 
             if flick and charge.flickCooldown <= 0 then
-                local flickStrength = 2500 -- Adjust this value to change flick power
-                local velocityX = -charge.direction.x * flickStrength * charge.previousMagnitude
-                local velocityY = -charge.direction.y * flickStrength * charge.previousMagnitude
+                local velocityX = -charge.direction.x * self.flickStrength * charge.previousMagnitude
+                local velocityY = -charge.direction.y * self.flickStrength * charge.previousMagnitude
 
                 local rechargeTime = RECHARGE_TIME
                 -- for each puck, increase time by 0.1s up to a maximum of 3s
@@ -510,7 +498,7 @@ function Scene:draw()
             local charge = self.playerStates[i].playerCharge
             if cooldown <= 0 and charge.isCharging then
                 -- Calculate arrow length based on magnitude (max length of 100 pixels)
-                local maxLength = -100
+                local maxLength = -150
                 local arrowLength = charge.magnitude * maxLength
                 
                 -- Calculate end position of arrow (in direction of charge)
@@ -673,6 +661,8 @@ function Scene:draw()
 end
 
 function Scene:load()
+    self.flickStrength = 2500 * (love.graphics.getWidth() / 1117)
+
     -- Layout vars
     local screenWidth = love.graphics.getWidth()
     local screenHeight = love.graphics.getHeight()
