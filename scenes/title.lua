@@ -37,7 +37,7 @@ function Scene:load()
     end
 end
 
-function Scene:update(dt)
+function Scene:update(dt)    
     -- Update countdown if active
     if self.countdown.active then
         self.countdown.timer = self.countdown.timer + dt
@@ -58,10 +58,21 @@ function Scene:update(dt)
         if joystick and joystick:isConnected() then
             local leftX = joystick:getGamepadAxis("leftx")
             local leftY = joystick:getGamepadAxis("lefty")
-            
+
+            local rightX = joystick:getGamepadAxis("rightx")
+            local rightY = joystick:getGamepadAxis("righty")
+
             -- Check if stick is moved beyond deadzone
-            local magnitude = math.sqrt(leftX * leftX + leftY * leftY)
+            local magnitude1 = math.sqrt(leftX * leftX + leftY * leftY)
+            local magnitude2 = math.sqrt(rightX * rightX + rightY * rightY)
             
+            local magnitude = math.max(magnitude1, magnitude2)
+
+            if magnitude2 > magnitude1 then
+                leftX = rightX
+                leftY = rightY
+            end
+
             -- Initialize player charge data if needed
             if not self.playerCharge[player.joystickID] then
                 self.playerCharge[player.joystickID] = {
@@ -238,14 +249,59 @@ function Scene:draw()
     love.graphics.setColor(0x95/255, 0x95/255, 0x95/255, 1)
     love.graphics.print(title, x, y - 3)
     
+    -- Draw winners rrect underneath the title
+    if #self.game.winners > 0 then
+        local winnersY = y + titleHeight + 20
+        local puckWidth = self.game.images.puck_red:getWidth() * 0.5
+        local padding = 10
+        local spacing = 50
+        
+        -- Calculate rrect dimensions
+        local numWinners = #self.game.winners
+        local rrectX = (screenWidth - self.game.images.rrect:getWidth()) / 2
+        local rrectY = winnersY
+
+        if numWinners > 5 then
+            spacing = (self.game.images.rrect:getWidth() - 50) / (numWinners - 1)
+        end
+        
+        -- Draw the rrect background
+        love.graphics.setColor(0, 0, 0, 0.13)
+        love.graphics.draw(self.game.images.rrect, rrectX, rrectY)
+        
+        -- Draw winner pucks inside the rrect
+        love.graphics.setColor(1, 1, 1, 1) -- Reset to white for puck images
+        local startX = rrectX + self.game.images.rrect:getWidth() / 2
+        if numWinners > 1 then
+            local totalWidth = (numWinners - 1) * (spacing)
+            startX = startX - totalWidth / 2
+        end
+        for i, winnerColor in ipairs(self.game.winners) do
+            local puckImage = self.game.images["puck_" .. winnerColor]
+            if puckImage then
+                local puckX = startX - puckWidth * 0.5 + (i - 1) * (spacing)
+                local puckY = rrectY + (self.game.images.rrect:getHeight() - puckImage:getHeight() * 0.5) * 0.5
+                love.graphics.draw(puckImage, puckX, puckY, 0, 0.5, 0.5)
+            end
+        end
+    end
+    
     -- Draw instructions or countdown
     if self.countdown.active then
+        -- Calculate position below winners or title
+        local baseY = y + titleHeight + 20
+        if #self.game.winners > 0 then
+            local puckSize = 50
+            local padding = 10
+            baseY = baseY + puckSize + padding * 2 + 20 -- Add space for winners display
+        end
+        
         -- Draw countdown
         local countdownText = tostring(self.countdown.timeLeft)
         love.graphics.setFont(self.game.fonts.titleFont)
         local countdownWidth = self.game.fonts.titleFont:getWidth(countdownText)
         local countdownX = (screenWidth - countdownWidth) / 2
-        local countdownY = y + titleHeight + 20
+        local countdownY = baseY
         
         love.graphics.setColor(0x95/255, 0x95/255, 0x95/255, 1) -- Same color as title
         love.graphics.print(countdownText, countdownX, countdownY)
@@ -289,19 +345,18 @@ function Scene:draw()
             -- Draw colored puck bottom-aligned with the sizer
             local puckX = player.position.x - puckWidth / 2
             local puckY = player.position.y + sizerHeight / 2 - puckHeight
-            love.graphics.draw(puckImage, puckX, puckY)
             
             -- Draw sizer centered on player position (on top)
             local sizerX = player.position.x - sizerWidth / 2
             local sizerY = player.position.y - sizerHeight / 2
-            love.graphics.draw(sizerImage, sizerX, sizerY)
+            -- love.graphics.draw(sizerImage, sizerX, sizerY)
             
             -- Draw charge arrow if player is charging
             if self.playerCharge[player.joystickID] and self.playerCharge[player.joystickID].isCharging then
                 local charge = self.playerCharge[player.joystickID]
                 
                 -- Calculate arrow length based on magnitude (max length of 100 pixels)
-                local maxLength = 100
+                local maxLength = -100
                 local arrowLength = charge.magnitude * maxLength
                 
                 -- Calculate end position of arrow (in direction of charge)
@@ -310,13 +365,29 @@ function Scene:draw()
                 
                 -- Draw thin black line
                 love.graphics.setColor(0, 0, 0, 1) -- Black color
-                love.graphics.setLineWidth(2)
+                love.graphics.setLineWidth(13)
                 love.graphics.line(player.position.x, player.position.y, endX, endY)
+
+                -- Draw arrowhead
+                local arrowheadImage = self.game.images.arrowhead
+                if arrowheadImage then
+                    -- Calculate angle of arrow direction
+                    local angle = math.atan2(charge.direction.y, charge.direction.x) - math.pi / 2
+                    
+                    -- Get arrowhead dimensions for centering
+                    local arrowWidth = arrowheadImage:getWidth()
+                    local arrowHeight = arrowheadImage:getHeight()
+                    
+                    -- Draw arrowhead centered at end of line, rotated to face arrow direction
+                    love.graphics.draw(arrowheadImage, endX, endY, angle, 1, 1, arrowWidth/2, arrowHeight/2)
+                end
                 
                 -- Reset color and line width
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.setLineWidth(1)
             end
+
+            love.graphics.draw(puckImage, puckX, puckY)
         end
     end
 end

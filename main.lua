@@ -20,6 +20,9 @@ local game = {
         }
         ]]--
     },
+    winners = {
+        -- list of player colours who have won
+    },
     pucks = {
         --[[
         {
@@ -88,6 +91,9 @@ function love.load()
     game.images.puck_yellow = love.graphics.newImage("assets/puck_yellow.png")
     game.images.puck_red = love.graphics.newImage("assets/puck_red.png")
     game.images.rect = love.graphics.newImage("assets/rect.png")
+    game.images.rrect = love.graphics.newImage("assets/rrect.png")
+    game.images.up = love.graphics.newImage("assets/up.png")
+    game.images.arrowhead = love.graphics.newImage("assets/arrowhead.png")
 
     game.fonts.titleFont = love.graphics.newFont("assets/font.ttf", 72)
     game.fonts.smallFont = love.graphics.newFont("assets/font.ttf", 36)
@@ -169,7 +175,6 @@ function love.joystickadded(joystick)
     table.insert(game.players, {
         joystickID = joystick:getID(),
         colour = colour,
-        score = 0,
         puckCounter = 0,
         position = {x = love.math.random(100, love.graphics.getWidth() - 100), y = love.math.random(100, love.graphics.getHeight() - 100)},
         velocity = {x = 0, y = 0},
