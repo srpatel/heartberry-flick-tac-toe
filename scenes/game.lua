@@ -661,7 +661,7 @@ function Scene:draw()
 end
 
 function Scene:load()
-    self.flickStrength = 2500 * (love.graphics.getWidth() / 1728)
+    self.flickStrength = 2500 * (love.graphics.getHeight() / 1117) * (love.graphics.getHeight() / 1117)
 
     -- Layout vars
     local screenWidth = love.graphics.getWidth()
