@@ -661,6 +661,11 @@ function Scene:draw()
 end
 
 function Scene:load()
+    self.layout = {}
+    self.gameWon = false
+    self.winningPlayer = nil
+    self.winFlashTimer = 0
+
     self.flickStrength = 2500 * (love.graphics.getHeight() / 1117) * (love.graphics.getHeight() / 1117)
 
     -- Layout vars
