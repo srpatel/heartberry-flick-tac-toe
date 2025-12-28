@@ -160,6 +160,7 @@ function Scene:update(dt)
             self.hasCalculatedPoints = true
             -- For each of my up arrows, give me a point!
             self.playerStates[self.calculatingPointsForPlayer].score = self.playerStates[self.calculatingPointsForPlayer].score + self.playerStates[self.calculatingPointsForPlayer].up * 10
+            self:checkWinCondition()
         end
     end
     
