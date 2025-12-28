@@ -1,5 +1,6 @@
 local TitleScene = require("scenes/title")
 local GameScene = require("scenes/game")
+local GameTbScene = require("scenes/gametb")
 
 ---------------------------
 
@@ -23,6 +24,7 @@ local game = {
     winners = {
         -- list of player colours who have won
     },
+    gameMode = "realtime", -- "realtime" or "turnbased"
     pucks = {
         --[[
         {
@@ -106,6 +108,7 @@ function love.load(arg)
 
     game.scenes.title = TitleScene.new(game)
     game.scenes.game = GameScene.new(game)
+    game.scenes.gametb = GameTbScene.new(game)
 
     game:setScene(game.scenes.title)
 end

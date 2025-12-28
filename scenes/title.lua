@@ -16,6 +16,13 @@ function Scene.new(game)
         timer = 0
     }
 
+    -- Toggle animation state
+    self.toggleAnimation = {
+        offset = 0,
+        targetOffset = 0,
+        speed = 10
+    }
+
     return self
 end
 
@@ -44,6 +51,14 @@ function Scene:load()
 end
 
 function Scene:update(dt)    
+    -- Update toggle animation
+    self.toggleAnimation.targetOffset = self.game.gameMode == "turnbased" and 1 or 0
+    local diff = self.toggleAnimation.targetOffset - self.toggleAnimation.offset
+    self.toggleAnimation.offset = self.toggleAnimation.offset + diff * self.toggleAnimation.speed * dt
+    if math.abs(diff) < 0.01 then
+        self.toggleAnimation.offset = self.toggleAnimation.targetOffset
+    end
+
     -- Update countdown if active
     if self.countdown.active then
         self.countdown.timer = self.countdown.timer + dt
@@ -57,7 +72,11 @@ function Scene:update(dt)
                 self.countdown.timeLeft = 5
                 self.countdown.timer = 0
                 self.game.sounds.start:play()
-                self.game:setScene(self.game.scenes.game)
+                if self.game.gameMode == "realtime" then
+                    self.game:setScene(self.game.scenes.game)
+                else
+                    self.game:setScene(self.game.scenes.gametb)
+                end
                 return
             else
                 self.game.sounds.countdown:play()
@@ -123,7 +142,7 @@ function Scene:update(dt)
                     
                     -- Clear charging state after flick
                     charge.isCharging = false
-                    flickCooldown = 1 -- Half a second cooldown between flicks
+                    self.playerCharge[player.joystickID].flickCooldown = 1 -- Half a second cooldown between flicks
                 end
             end
             
@@ -249,9 +268,57 @@ function Scene:draw()
     love.graphics.setColor(0x95/255, 0x95/255, 0x95/255, 1)
     love.graphics.print(title, x, y - 3)
     
-    -- Draw winners rrect underneath the title
+    -- Draw game mode toggle underneath the title
+    local toggleY = y + titleHeight + 30
+    local toggleWidth = 120
+    local toggleHeight = 40
+    local toggleX = (screenWidth - toggleWidth) / 2
+    
+    -- Set small font for labels and get height
+    love.graphics.setFont(self.game.fonts.smallFont)
+    local smallFontHeight = self.game.fonts.smallFont:getHeight()
+    
+    -- Draw rounded rectangle background (darker)
+    love.graphics.setColor(0x4A/255, 0x4A/255, 0x4A/255, 1)
+    love.graphics.rectangle("fill", toggleX, toggleY, toggleWidth, toggleHeight, 20, 20)
+    
+    -- Draw circle position based on game mode
+    local circleRadius = 16
+    local circleY = toggleY + toggleHeight / 2
+    local leftCircleX = toggleX + circleRadius + 4
+    local rightCircleX = toggleX + toggleWidth - circleRadius - 4
+    local currentCircleX = leftCircleX + (rightCircleX - leftCircleX) * self.toggleAnimation.offset
+    
+    -- Draw circle (lighter)
+    love.graphics.setColor(0x95/255, 0x95/255, 0x95/255, 1)
+    love.graphics.circle("fill", currentCircleX, circleY, circleRadius)
+    
+    -- Draw mode labels
+    local labelY = toggleY - 5
+    
+    -- "Real-time" label on left
+    local realtimeText = "Chaos"
+    local realtimeWidth = self.game.fonts.smallFont:getWidth(realtimeText)
+    local realtimeX = leftCircleX - 40 - realtimeWidth
+    love.graphics.setColor(0x95/255, 0x95/255, 0x95/255, 1)
+    love.graphics.print(realtimeText, realtimeX, labelY)
+    
+    -- "Turn-based" label on right
+    local turnbasedText = "Calm"
+    local turnbasedWidth = self.game.fonts.smallFont:getWidth(turnbasedText)
+    local turnbasedX = rightCircleX + 40
+    love.graphics.print(turnbasedText, turnbasedX, labelY)
+    
+    -- Draw toggle instruction
+    local toggleInstructionText = "Press Y to toggle"
+    local toggleInstructionWidth = self.game.fonts.smallFont:getWidth(toggleInstructionText)
+    local toggleInstructionX = (screenWidth - toggleInstructionWidth) / 2
+    local toggleInstructionY = labelY + smallFontHeight + 10
+    love.graphics.print(toggleInstructionText, toggleInstructionX, toggleInstructionY)
+    
+    -- Draw winners rrect underneath the toggle
     if #self.game.winners > 0 then
-        local winnersY = y + titleHeight + 20
+        local winnersY = 50
         local puckWidth = self.game.images.puck_red:getWidth() * 0.5
         local padding = 10
         local spacing = 50
@@ -288,13 +355,8 @@ function Scene:draw()
     
     -- Draw instructions or countdown
     if self.countdown.active then
-        -- Calculate position below winners or title
-        local baseY = y + titleHeight + 20
-        if #self.game.winners > 0 then
-            local puckSize = 50
-            local padding = 10
-            baseY = baseY + puckSize + padding * 2 + 20 -- Add space for winners display
-        end
+        -- Calculate position below winners or toggle
+        local baseY = toggleInstructionY + smallFontHeight + 40  -- Start below toggle instruction
         
         -- Draw countdown
         local countdownText = tostring(self.countdown.timeLeft)
@@ -404,6 +466,9 @@ function Scene:gamepadpressed(joystick, button, player)
         self.countdown.active = false
         self.countdown.timeLeft = 5
         self.countdown.timer = 0
+    elseif button == "y" and not self.countdown.active then
+        -- Toggle game mode
+        self.game.gameMode = self.game.gameMode == "realtime" and "turnbased" or "realtime"
     end
 end
 
