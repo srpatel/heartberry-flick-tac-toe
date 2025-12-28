@@ -1,7 +1,7 @@
 local Scene = {}
 Scene.__index = Scene
 
-local RECHARGE_TIME = 1.5
+local RECHARGE_TIME = 1
 local EXCLUSION_LIMIT = 2
 
 function Scene.new(game)
@@ -80,10 +80,10 @@ function Scene:update(dt)
                 local velocityY = -charge.direction.y * self.flickStrength * charge.previousMagnitude
 
                 local rechargeTime = RECHARGE_TIME
-                -- for each puck, increase time by 0.1s up to a maximum of 3s
+                -- for each puck, increase time by 0.3s
                 for _, puck in ipairs(self.pucks) do
                     if puck.playerIndex == i then
-                        rechargeTime = math.min(rechargeTime + 0.1, 3)
+                        rechargeTime = rechargeTime + 0.3
                     end
                 end
                 self.playerStates[i].puckCooldown = rechargeTime
@@ -100,6 +100,7 @@ function Scene:update(dt)
                     },
                     colour = player.colour,
                     playerIndex = i,
+                    tooOld = false,
                     exclusionTimer = 0 -- Track time spent in exclusion zone
                 }
                 
@@ -209,6 +210,7 @@ function Scene:update(dt)
     end
     
     -- Check exclusion zone and eliminate pucks that stay too long outside grid
+    -- Also eliminate oldest pucks once you have 7+
     local exclusionMargin = 50
     local gridLeft = self.layout.gridStartX - exclusionMargin
     local gridRight = self.layout.gridStartX + self.layout.gridWidth + exclusionMargin
@@ -222,7 +224,7 @@ function Scene:update(dt)
         local inExclusionZone = puck.position.x < gridLeft or puck.position.x > gridRight or
                                puck.position.y < gridTop or puck.position.y > gridBottom
         
-        if inExclusionZone then
+        if inExclusionZone or puck.tooOld then
             puck.exclusionTimer = puck.exclusionTimer + dt
             
             -- Eliminate puck if it's been in exclusion zone for more than EXCLUSION_LIMIT seconds
@@ -232,6 +234,21 @@ function Scene:update(dt)
         else
             -- Reset timer if puck is back in the allowed area
             puck.exclusionTimer = 0
+        end
+    end
+
+    for i, player in ipairs(self.game.players) do
+        local myPucks = {}
+        for j, puck in ipairs(self.pucks) do
+            if puck.playerIndex == i then
+                table.insert(myPucks, puck)
+            end
+        end
+        if #myPucks > 6 then
+            local numToRemove = #myPucks - 6
+            for k = 1, numToRemove do
+                myPucks[k].tooOld = true
+            end
         end
     end
 

@@ -2,7 +2,7 @@
   "name": "Flick-Tac-Toe",
   "version": "1.0.0",
   "author": "sunil",
-  "exec": "love .",
+  "exec": "love . --heartberry",
   "thumbnail": "thumbnail.png",
   "description": "Flick your tokens into the grid to make three in a row."
 }

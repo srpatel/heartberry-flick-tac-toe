@@ -37,6 +37,7 @@ local game = {
     -- assets
     images = {},
     fonts = {},
+    sounds = {},
 
     -- constants
     constants = {
@@ -76,9 +77,11 @@ local game = {
 
 ---------------------------
 
-function love.load()
-    love.window.setFullscreen(true)
-    love.mouse.setVisible(false)
+function love.load(arg)
+    if #arg > 0 and arg[1] == "--heartberry" then
+        love.window.setFullscreen(true)
+        love.mouse.setVisible(false)
+    end
 
     game.images.pulp = love.graphics.newImage("assets/pulp.png")
     game.images.ownership_blue = love.graphics.newImage("assets/ownership_blue.png")
@@ -94,6 +97,9 @@ function love.load()
     game.images.rrect = love.graphics.newImage("assets/rrect.png")
     game.images.up = love.graphics.newImage("assets/up.png")
     game.images.arrowhead = love.graphics.newImage("assets/arrowhead.png")
+
+    game.sounds.countdown = love.audio.newSource("assets/sound/countdown.wav", "static")
+    game.sounds.start = love.audio.newSource("assets/sound/start.wav", "static")
 
     game.fonts.titleFont = love.graphics.newFont("assets/font.ttf", 72)
     game.fonts.smallFont = love.graphics.newFont("assets/font.ttf", 36)

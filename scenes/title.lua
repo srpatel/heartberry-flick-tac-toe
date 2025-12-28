@@ -56,8 +56,11 @@ function Scene:update(dt)
                 self.countdown.active = false
                 self.countdown.timeLeft = 5
                 self.countdown.timer = 0
+                self.game.sounds.start:play()
                 self.game:setScene(self.game.scenes.game)
                 return
+            else
+                self.game.sounds.countdown:play()
             end
         end
     end
@@ -394,6 +397,7 @@ function Scene:gamepadpressed(joystick, button, player)
         -- Start countdown
         self.countdown.active = true
         self.countdown.timeLeft = 5
+        self.game.sounds.countdown:play()
         self.countdown.timer = 0
     elseif button == "b" and self.countdown.active then
         -- Cancel countdown
